@@ -1,5 +1,5 @@
 // frontend/src/api/auth.ts
-import { apiClient } from "./client";
+import { http } from "./http";
 
 export interface User {
   _id: string;
@@ -12,22 +12,30 @@ export interface AuthResponse {
   token: string;
 }
 
-export async function login(email: string, password: string): Promise<AuthResponse> {
-  return apiClient.post<AuthResponse>("/auth/login", { email, password });
-}
+export const login = async (
+  email: string,
+  password: string
+): Promise<AuthResponse> => {
+  return http<AuthResponse>("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+};
 
-export async function register(
+export const register = async (
   name: string,
   email: string,
   password: string
-): Promise<AuthResponse> {
-  return apiClient.post<AuthResponse>("/auth/register", {
-    name,
-    email,
-    password,
+): Promise<AuthResponse> => {
+  return http<AuthResponse>("/auth/register", {
+    method: "POST",
+    body: JSON.stringify({ name, email, password }),
   });
-}
+};
 
-export async function fetchMe(token: string): Promise<User> {
-  return apiClient.get<User>("/auth/me", token);
-}
+export const getMe = async (): Promise<User> => {
+  // token is taken from localStorage inside http()
+  return http<User>("/auth/me", {
+    method: "GET",
+  });
+};

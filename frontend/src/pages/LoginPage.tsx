@@ -1,21 +1,22 @@
+// frontend/src/pages/LoginPage.tsx
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { login } from "../api/auth";
 import { useAuth } from "../hooks/useAuth";
 
 const LoginPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { loginWithResponse } = useAuth();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const { loginWithResponse } = useAuth();
-  const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
+    setError(null);
     try {
       const data = await login(email, password);
       loginWithResponse(data);
@@ -28,38 +29,34 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="auth-page">
-      <h1>Coach-Fit Login</h1>
-      <form onSubmit={handleSubmit} className="auth-form">
-        {error && <p className="error">{error}</p>}
+    <div>
+      <h1>Login</h1>
+      {error && <p style={{ color: "red" }}>{error}</p>}
 
-        <label>
-          Email
+      <form onSubmit={handleSubmit}>
+        <div>
+          <label>Email</label>
           <input
-            type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            type="email"
             required
           />
-        </label>
+        </div>
 
-        <label>
-          Password
+        <div>
+          <label>Password</label>
           <input
-            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            type="password"
             required
           />
-        </label>
+        </div>
 
         <button type="submit" disabled={loading}>
           {loading ? "Logging in..." : "Login"}
         </button>
-
-        <p>
-          No account? <Link to="/register">Create one</Link>
-        </p>
       </form>
     </div>
   );

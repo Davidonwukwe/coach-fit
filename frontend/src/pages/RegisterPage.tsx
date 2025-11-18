@@ -1,22 +1,23 @@
+// frontend/src/pages/RegisterPage.tsx
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { register } from "../api/auth";
 import { useAuth } from "../hooks/useAuth";
 
 const RegisterPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { loginWithResponse } = useAuth();
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const { loginWithResponse } = useAuth();
-  const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
+    setError(null);
     try {
       const data = await register(name, email, password);
       loginWithResponse(data);
@@ -29,48 +30,43 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="auth-page">
-      <h1>Create Coach-Fit Account</h1>
-      <form onSubmit={handleSubmit} className="auth-form">
-        {error && <p className="error">{error}</p>}
+    <div>
+      <h1>Register</h1>
+      {error && <p style={{ color: "red" }}>{error}</p>}
 
-        <label>
-          Name
+      <form onSubmit={handleSubmit}>
+        <div>
+          <label>Name</label>
           <input
-            type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
           />
-        </label>
+        </div>
 
-        <label>
-          Email
+        <div>
+          <label>Email</label>
           <input
-            type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            type="email"
             required
           />
-        </label>
+        </div>
 
-        <label>
-          Password
+        <div>
+          <label>Password</label>
           <input
-            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            type="password"
             required
           />
-        </label>
+        </div>
 
         <button type="submit" disabled={loading}>
-          {loading ? "Creating..." : "Register"}
+          {loading ? "Creating account..." : "Register"}
         </button>
-
-        <p>
-          Already have an account? <Link to="/login">Login</Link>
-        </p>
       </form>
     </div>
   );

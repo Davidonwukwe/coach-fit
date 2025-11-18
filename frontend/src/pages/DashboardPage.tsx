@@ -45,6 +45,21 @@ const DashboardPage: React.FC = () => {
           ➕ Log a New Workout
         </Link>
       </div>
+      <div style={{ marginTop: "2rem" }}>
+        <Link
+          to="/history"
+          style={{
+            padding: "0.75rem 1rem",
+            background: "#28a745",
+            color: "white",
+            borderRadius: "6px",
+            textDecoration: "none",
+            fontWeight: 600,
+          }}
+        >
+          📘 View Workout History
+        </Link>
+      </div>
 
       {/* Recent Workouts */}
       <section style={{ marginTop: "2rem" }}>

@@ -4,7 +4,8 @@ import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
-import LogWorkoutPage from "./pages/LogWorkoutPage"; // 👈 NEW
+import LogWorkoutPage from "./pages/LogWorkoutPage";
+import WorkoutHistoryPage from "./pages/WorkoutHistoryPage";
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./hooks/useAuth";
@@ -20,6 +21,7 @@ const App: React.FC = () => {
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+
             <Route
               path="/dashboard"
               element={
@@ -28,11 +30,21 @@ const App: React.FC = () => {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/log-workout"
               element={
                 <ProtectedRoute>
                   <LogWorkoutPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/history"
+              element={
+                <ProtectedRoute>
+                  <WorkoutHistoryPage />
                 </ProtectedRoute>
               }
             />

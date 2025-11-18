@@ -1,18 +1,19 @@
-// frontend/src/pages/RegisterPage.tsx
+// src/pages/RegisterPage.tsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { register } from "../api/auth";
 import { useAuth } from "../hooks/useAuth";
 
 const RegisterPage: React.FC = () => {
-  const navigate = useNavigate();
-  const { loginWithResponse } = useAuth();
-
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { loginWithResponse } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,44 +31,48 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div>
+    <div className="auth-page">
       <h1>Register</h1>
-      {error && <p style={{ color: "red" }}>{error}</p>}
-
       <form onSubmit={handleSubmit}>
-        <div>
-          <label>Name</label>
+        <label>
+          Name
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
           />
-        </div>
+        </label>
 
-        <div>
-          <label>Email</label>
+        <label>
+          Email
           <input
+            type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            type="email"
             required
           />
-        </div>
+        </label>
 
-        <div>
-          <label>Password</label>
+        <label>
+          Password
           <input
+            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            type="password"
             required
           />
-        </div>
+        </label>
+
+        {error && <p className="error">{error}</p>}
 
         <button type="submit" disabled={loading}>
           {loading ? "Creating account..." : "Register"}
         </button>
       </form>
+
+      <p>
+        Already have an account? <Link to="/login">Login</Link>
+      </p>
     </div>
   );
 };

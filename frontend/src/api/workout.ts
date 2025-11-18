@@ -1,31 +1,25 @@
-// frontend/src/api/workout.ts
-import { http } from "./http";
+// src/api/workout.ts
+import { api } from "./http";
 
 export interface Workout {
   _id: string;
   date: string;
-  // adjust these fields based on your backend Model
-  name: string;
   notes?: string;
+  // you can add exercises, sets, reps, etc later
 }
 
 export interface CreateWorkoutPayload {
   date: string;
-  name: string;
   notes?: string;
+  // add exercises array later
 }
 
 export const fetchWorkouts = async (): Promise<Workout[]> => {
-  return http<Workout[]>("/workouts", {
-    method: "GET",
-  });
+  return api.get<Workout[]>("/workouts");
 };
 
 export const createWorkout = async (
   payload: CreateWorkoutPayload
 ): Promise<Workout> => {
-  return http<Workout>("/workouts", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  return api.post<Workout>("/workouts", payload);
 };

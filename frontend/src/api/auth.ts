@@ -1,41 +1,36 @@
-// frontend/src/api/auth.ts
-import { http } from "./http";
+// src/api/auth.ts
+import { api } from "./http";
 
 export interface User {
   _id: string;
   name: string;
   email: string;
+  // add other fields if your backend returns them
 }
 
 export interface AuthResponse {
+  token: string; // required, not optional
   user: User;
-  token: string;
 }
 
-export const login = async (
+export const login = (
   email: string,
   password: string
 ): Promise<AuthResponse> => {
-  return http<AuthResponse>("/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
-  });
+  return api.post<AuthResponse>("/auth/login", { email, password });
 };
 
-export const register = async (
+export const register = (
   name: string,
   email: string,
   password: string
 ): Promise<AuthResponse> => {
-  return http<AuthResponse>("/auth/register", {
-    method: "POST",
-    body: JSON.stringify({ name, email, password }),
-  });
+  return api.post<AuthResponse>("/auth/register", { name, email, password });
 };
 
-export const getMe = async (): Promise<User> => {
-  // token is taken from localStorage inside http()
-  return http<User>("/auth/me", {
-    method: "GET",
-  });
+export const fetchMe = (): Promise<User> => {
+  return api.get<User>("/auth/me");
 };
+
+// alias if you want to use getMe elsewhere
+export const getMe = fetchMe;

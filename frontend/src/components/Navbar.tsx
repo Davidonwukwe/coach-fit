@@ -16,7 +16,8 @@ const Navbar: React.FC = () => {
           <>
             <span className="nav-user">Hi, {user.name}</span>
             <Link to="/dashboard">Dashboard</Link>
-            <Link to="/log-workout">Log Workout</Link>  
+            <Link to="/history">History</Link>
+            <Link to="/analytics">Analytics</Link>
             <button onClick={logout}>Logout</button>
           </>
         ) : (

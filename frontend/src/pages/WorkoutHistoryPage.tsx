@@ -23,6 +23,13 @@ const WorkoutHistoryPage: React.FC = () => {
     load();
   }, []);
 
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+
   return (
     <div style={{ padding: "1.5rem" }}>
       <h1>Workout History</h1>
@@ -45,14 +52,29 @@ const WorkoutHistoryPage: React.FC = () => {
           }}
         >
           {workouts.map((w) => {
-            const dateLabel = new Date(w.date).toLocaleDateString();
+            const dateLabel = formatDate(w.date);
+
             const totalSets = w.items.reduce(
               (sum, item) => sum + (item.sets?.length || 0),
               0
             );
+
+            // 🔑 Use exerciseName if present, otherwise use populated exerciseId.name
             const exercisesSummary =
               w.items
-                .map((item) => item.exerciseName || "Exercise")
+                .map((item) => {
+                  // exerciseName set by frontend when logging single-exercise workouts
+                  if (item.exerciseName) return item.exerciseName;
+
+                  // when populated from backend, exerciseId is an object like { _id, name, muscleGroup }
+                  const exObj = item.exerciseId as unknown as {
+                    _id?: string;
+                    name?: string;
+                    muscleGroup?: string;
+                  };
+
+                  return exObj?.name || "Exercise";
+                })
                 .join(", ") || "Workout";
 
             return (
@@ -65,25 +87,30 @@ const WorkoutHistoryPage: React.FC = () => {
                   background: "#fafafa",
                 }}
               >
+                {/* Date */}
                 <div
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
                     marginBottom: "0.25rem",
+                    fontSize: "0.9rem",
+                    color: "#555",
                   }}
                 >
-                  <strong>{dateLabel}</strong>
-                  <span style={{ fontSize: "0.9rem", color: "#555" }}>
+                  <span>{dateLabel}</span>
+                  <span>
                     {w.items.length} exercise
                     {w.items.length > 1 ? "s" : ""}, {totalSets} set
                     {totalSets > 1 ? "s" : ""}
                   </span>
                 </div>
 
+                {/* Exercises list */}
                 <div style={{ fontSize: "0.9rem", color: "#333" }}>
                   Exercises: <strong>{exercisesSummary}</strong>
                 </div>
 
+                {/* Notes */}
                 {w.notes && (
                   <div
                     style={{

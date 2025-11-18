@@ -24,13 +24,22 @@ const DashboardPage: React.FC = () => {
     loadWorkouts();
   }, []);
 
+  const hasWorkouts = !loading && !error && workouts.length > 0;
+
+  // Simple stats (we know backend returns workouts sorted by date desc)
+  const totalWorkouts = workouts.length;
+  const lastWorkoutDate =
+    hasWorkouts && workouts[0].date
+      ? new Date(workouts[0].date).toLocaleDateString()
+      : null;
+
   return (
     <div style={{ padding: "1.5rem" }}>
       <h1>Coach-Fit Dashboard</h1>
-      <p>Welcome back! Here you’ll see your workout stats and progress.</p>
+      <p>Welcome back! Here you’ll see your workout stats and quick links.</p>
 
-      {/* Quick Action Button */}
-      <div style={{ marginTop: "1.5rem" }}>
+      {/* Quick Actions */}
+      <div style={{ marginTop: "1.5rem", display: "flex", gap: "1rem" }}>
         <Link
           to="/log-workout"
           style={{
@@ -44,8 +53,7 @@ const DashboardPage: React.FC = () => {
         >
           ➕ Log a New Workout
         </Link>
-      </div>
-      <div style={{ marginTop: "2rem" }}>
+
         <Link
           to="/history"
           style={{
@@ -59,7 +67,63 @@ const DashboardPage: React.FC = () => {
         >
           📘 View Workout History
         </Link>
+
+        <Link
+          to="/analytics"
+          style={{
+            padding: "0.75rem 1rem",
+            background: "#6f42c1",
+            color: "white",
+            borderRadius: "6px",
+            textDecoration: "none",
+            fontWeight: 600,
+          }}
+        >
+          📊 View Analytics
+        </Link>
       </div>
+
+      {/* Small stats summary */}
+      <section
+        style={{
+          marginTop: "2rem",
+          display: "flex",
+          gap: "1rem",
+          flexWrap: "wrap",
+        }}
+      >
+        <div
+          style={{
+            minWidth: "180px",
+            padding: "1rem",
+            borderRadius: "8px",
+            border: "1px solid #ddd",
+            background: "#fafafa",
+          }}
+        >
+          <div style={{ fontSize: "0.9rem", color: "#666" }}>Total Workouts</div>
+          <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#666"}}>
+            {totalWorkouts}
+          </div>
+        </div>
+
+        <div
+          style={{
+            minWidth: "180px",
+            padding: "1rem",
+            borderRadius: "8px",
+            border: "1px solid #ddd",
+            background: "#fafafa",
+          }}
+        >
+          <div style={{ fontSize: "0.9rem", color: "#666" }}>
+            Last Workout Date
+          </div>
+          <div style={{ fontSize: "1.1rem", fontWeight: 600, color: "#666" }}>
+            {lastWorkoutDate ?? "—"}
+          </div>
+        </div>
+      </section>
 
       {/* Recent Workouts */}
       <section style={{ marginTop: "2rem" }}>
@@ -78,7 +142,7 @@ const DashboardPage: React.FC = () => {
           </p>
         )}
 
-        {!loading && !error && workouts.length > 0 && (
+        {hasWorkouts && (
           <div
             style={{
               marginTop: "1rem",
@@ -91,7 +155,7 @@ const DashboardPage: React.FC = () => {
               const dateLabel = new Date(w.date).toLocaleDateString();
               const firstItem = w.items[0];
 
-              // 🔍 Safely derive the main exercise name
+              // Safely derive the main exercise name
               let mainExerciseName = "Workout";
               if (firstItem) {
                 if (firstItem.exerciseName) {
@@ -99,10 +163,9 @@ const DashboardPage: React.FC = () => {
                 } else {
                   const exId: any = firstItem.exerciseId;
                   if (exId && typeof exId === "object" && "name" in exId) {
-                    // Populated Mongoose document: { _id, name, muscleGroup }
+                    // Populated doc: { _id, name, muscleGroup }
                     mainExerciseName = exId.name;
                   } else if (typeof exId === "string") {
-                    // Fallback: raw string id
                     mainExerciseName = exId;
                   }
                 }
@@ -114,58 +177,50 @@ const DashboardPage: React.FC = () => {
               );
 
               return (
-                <div
-                  key={w._id}
-                  style={{
-                    border: "1px solid #ddd",
-                    borderRadius: "8px",
-                    padding: "0.75rem 1rem",
-                    background: "#fafafa",
-                  }}
-                >
+                <>
                   <div
+                    key={w._id}
                     style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      marginBottom: "0.25rem",
+                      border: "1px solid #ddd",
+                      borderRadius: "8px",
+                      padding: "0.75rem 1rem",
+                      background: "#fafafa",
                     }}
                   >
-                    <strong>{dateLabel}</strong>
-                    <span style={{ fontSize: "0.9rem", color: "#555" }}>
-                      {w.items.length} exercise
-                      {w.items.length > 1 ? "s" : ""}, {totalSets} set
-                      {totalSets > 1 ? "s" : ""}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: "0.95rem", color: "#333" }}>
-                    Main exercise: <strong>{mainExerciseName}</strong>
-                  </div>
-                  {w.notes && (
                     <div
                       style={{
-                        marginTop: "0.25rem",
-                        fontSize: "0.85rem",
-                        color: "#666",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        marginBottom: "0.25rem",
                       }}
                     >
-                      Notes: {w.notes}
+                      <strong style={{ color: "#555" }}>{dateLabel}</strong>
+                      <span style={{ fontSize: "0.9rem", color: "#555" }}>
+                        {w.items.length} exercise
+                        {w.items.length > 1 ? "s" : ""}, {totalSets} set
+                        {totalSets > 1 ? "s" : ""}
+                      </span>
                     </div>
-                  )}
-                </div>
+                    <div style={{ fontSize: "0.95rem", color: "#333" }}>
+                      Main exercise: <strong>{mainExerciseName}</strong>
+                    </div>
+                    {w.notes && (
+                      <div
+                        style={{
+                          marginTop: "0.25rem",
+                          fontSize: "0.85rem",
+                          color: "#666",
+                        }}
+                      >
+                        Notes: {w.notes}
+                      </div>
+                    )}
+                  </div>
+                </>
               );
             })}
           </div>
         )}
-      </section>
-
-      {/* Coming Soon */}
-      <section style={{ marginTop: "2rem" }}>
-        <h2>Coming Soon</h2>
-        <ul>
-          <li>Weekly training volume</li>
-          <li>RPE and intensity trends</li>
-          <li>Recommended next workouts</li>
-        </ul>
       </section>
     </div>
   );

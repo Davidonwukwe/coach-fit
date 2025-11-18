@@ -6,7 +6,7 @@ import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
 import LogWorkoutPage from "./pages/LogWorkoutPage";
 import WorkoutHistoryPage from "./pages/WorkoutHistoryPage";
-import WorkoutAnalyticsPage from "./pages/WorkoutAnalyticsPage";
+import WorkoutAnalyticsPage from "./pages/AnalyticsPage";
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./hooks/useAuth";

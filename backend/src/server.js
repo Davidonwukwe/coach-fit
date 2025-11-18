@@ -1,27 +1,33 @@
-require("dotenv").config();
+// backend/src/server.js
 const express = require("express");
 const cors = require("cors");
+const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 
-const authRoutes = require("./routes/authRoutes");
-const workoutRoutes = require("./routes/workoutRoutes");
-const exerciseRoutes = require("./routes/exerciseRoutes");
+dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 4000;
+const port = process.env.PORT || 4000;
 
-// Middlewares
 app.use(cors());
 app.use(express.json());
 
-// DB
 connectDB();
 
-// Routes
-app.get("/", (req, res) => res.send("Coach-Fit API Running"));
-app.use("/api/auth", authRoutes);
-app.use("/api/workouts", workoutRoutes);
-app.use("/api/exercises", exerciseRoutes);
+app.get("/", (_req, res) => {
+  res.json({ message: "Coach-Fit API is running" });
+});
 
-// Start server
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/exercises", require("./routes/exerciseRoutes"));
+app.use("/api/workouts", require("./routes/workoutRoutes"));
+
+// basic error handler
+app.use((err, _req, res, _next) => {
+  console.error("Unhandled error:", err);
+  res.status(500).json({ message: "Server error" });
+});
+
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});

@@ -1,12 +1,23 @@
 // src/pages/LogWorkoutPage.tsx
 import React, { useEffect, useState } from "react";
 import { createExercise, Exercise, fetchExercises } from "../api/exercise";
+import {
+  createWorkout,
+  type Workout,
+  type WorkoutSet,
+  type WorkoutItem,
+} from "../api/workout";
 
 interface SetInput {
   reps: number;
   weight: number;
   rpe: number;
 }
+
+type CreateWorkoutPayload = Omit<
+  Workout,
+  "_id" | "userId" | "createdAt" | "updatedAt"
+>;
 
 const LogWorkoutPage: React.FC = () => {
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -16,6 +27,9 @@ const LogWorkoutPage: React.FC = () => {
   const [sets, setSets] = useState<SetInput[]>([
     { reps: 8, weight: 0, rpe: 7 },
   ]);
+
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
 
   // 🔁 Load exercises from backend when page mounts
   useEffect(() => {
@@ -44,6 +58,7 @@ const LogWorkoutPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setSaving(true);
 
     try {
       let exerciseToUse: Exercise | null = null;
@@ -53,6 +68,7 @@ const LogWorkoutPage: React.FC = () => {
         const found = exercises.find((ex) => ex._id === selectedExerciseId);
         if (!found) {
           alert("Selected exercise not found. Please choose again.");
+          setSaving(false);
           return;
         }
         exerciseToUse = found;
@@ -60,44 +76,64 @@ const LogWorkoutPage: React.FC = () => {
         // Case 2: user is adding a new exercise
         if (!customExerciseName.trim()) {
           alert("Please select an exercise or type a new one.");
+          setSaving(false);
           return;
         }
 
-        // ✅ Create exercise in DB
         const newExercise = await createExercise(customExerciseName.trim());
         exerciseToUse = newExercise;
 
-        // Optionally add it to local list and select it
+        // Add it to local list and select it
         setExercises((prev) => [...prev, newExercise]);
         setSelectedExerciseId(newExercise._id);
       }
 
       if (!exerciseToUse) {
         alert("Something went wrong with the exercise selection.");
+        setSaving(false);
         return;
       }
 
-      // 🧾 This is the payload we’ll later send to /api/workouts
-      const workoutPayload = {
-        exerciseId: exerciseToUse._id,
-        exerciseName: exerciseToUse.name,
-        sets,
+      // Map local SetInput → WorkoutSet
+      const mappedSets: WorkoutSet[] = sets.map((s) => ({
+        reps: s.reps,
+        // Only include weight/RPE if they’re actually set
+        weight: s.weight || undefined,
+        rpe: s.rpe || undefined,
+      }));
+
+      // Build full workout payload that matches backend + src/api/workout.ts
+      const items: WorkoutItem[] = [
+        {
+          exerciseId: exerciseToUse._id,
+          exerciseName: exerciseToUse.name,
+          sets: mappedSets,
+        },
+      ];
+
+      const workoutPayload: CreateWorkoutPayload = {
         date: new Date().toISOString(),
+        notes: notes.trim() || undefined,
+        items,
       };
 
-      console.log("Workout payload:", workoutPayload);
+      const saved = await createWorkout(workoutPayload);
+      console.log("Saved workout:", saved);
+
       alert(
-        `Workout ready to send!\n\nExercise: ${exerciseToUse.name}\nSets: ${sets.length}`
+        `Workout saved!\n\nExercise: ${exerciseToUse.name}\nSets: ${sets.length}`
       );
 
-      // TODO (next step): call createWorkout(workoutPayload) once backend route is ready
-
-      // reset form after "saving"
+      // reset form after saving
       setCustomExerciseName("");
+      setSelectedExerciseId("");
       setSets([{ reps: 8, weight: 0, rpe: 7 }]);
+      setNotes("");
     } catch (err) {
-      console.error("Failed to submit workout", err);
+      console.error("Failed to save workout", err);
       alert("Failed to save workout. Please try again.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -211,9 +247,22 @@ const LogWorkoutPage: React.FC = () => {
           + Add another set
         </button>
 
-        <br />
+        {/* Notes */}
+        <div style={{ marginBottom: "1rem" }}>
+          <label>
+            Notes (optional) <br />
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              style={{ width: "100%", padding: "0.5rem", minHeight: "80px" }}
+              placeholder="How did this workout feel?"
+            />
+          </label>
+        </div>
 
-        <button type="submit">Save Workout</button>
+        <button type="submit" disabled={saving}>
+          {saving ? "Saving..." : "Save Workout"}
+        </button>
       </form>
     </div>
   );

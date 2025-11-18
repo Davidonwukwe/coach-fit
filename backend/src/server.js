@@ -1,38 +1,27 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
-const mongoose = require("mongoose");
+const connectDB = require("./config/db");
+
+const authRoutes = require("./routes/authRoutes");
+const workoutRoutes = require("./routes/workoutRoutes");
+const exerciseRoutes = require("./routes/exerciseRoutes");
 
 const app = express();
-const port = process.env.PORT || 5000;
+const PORT = process.env.PORT || 4000;
 
+// Middlewares
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.send("Hello to Fitness Tracker API");
-});
+// DB
+connectDB();
 
-// --- NEW MONGOOSE CONNECT STYLE ---
-mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => {
-    console.log("Database connected");
-  })
-  .catch((err) => {
-    console.error("MongoDB connection error:", err.message);
-  });
+// Routes
+app.get("/", (req, res) => res.send("Coach-Fit API Running"));
+app.use("/api/auth", authRoutes);
+app.use("/api/workouts", workoutRoutes);
+app.use("/api/exercises", exerciseRoutes);
 
-// routes
-// const exercisesRouter = require("./routes/exercises");
-// const usersRouter = require("./routes/users");
-
-// app.use("/exercises", exercisesRouter);
-// app.use("/users", usersRouter);
-
-app.listen(port, () => {
-  console.log(`Server is running on port: ${port}`);
-});
+// Start server
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

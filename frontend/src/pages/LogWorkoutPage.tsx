@@ -1,5 +1,6 @@
 // src/pages/LogWorkoutPage.tsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { createExercise, Exercise, fetchExercises } from "../api/exercise";
 
 interface SetInput {
   reps: number;
@@ -7,143 +8,146 @@ interface SetInput {
   rpe: number;
 }
 
-const API_BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || "http://localhost:4000/api";
-
 const LogWorkoutPage: React.FC = () => {
-  const [exerciseName, setExerciseName] = useState("");
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [selectedExerciseId, setSelectedExerciseId] = useState<string>("");
+  const [customExerciseName, setCustomExerciseName] = useState<string>("");
+
   const [sets, setSets] = useState<SetInput[]>([
     { reps: 8, weight: 0, rpe: 7 },
   ]);
-  const [notes, setNotes] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  // 🔁 Load exercises from backend when page mounts
+  useEffect(() => {
+    const loadExercises = async () => {
+      try {
+        const data = await fetchExercises();
+        setExercises(data);
+      } catch (err) {
+        console.error("Failed to load exercises", err);
+      }
+    };
+    loadExercises();
+  }, []);
 
   const addSet = () => {
     setSets((prev) => [...prev, { reps: 8, weight: 0, rpe: 7 }]);
   };
 
   const updateSet = (index: number, field: keyof SetInput, value: number) => {
-    const copy = [...sets];
-    copy[index] = { ...copy[index], [field]: value };
-    setSets(copy);
+    setSets((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: value };
+      return copy;
+    });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError(null);
-    setSubmitting(true);
 
     try {
-      const token = localStorage.getItem("coachfit_token");
-      if (!token) {
-        setError("You need to log in again.");
-        setSubmitting(false);
+      let exerciseToUse: Exercise | null = null;
+
+      // Case 1: user selected an existing exercise from the dropdown
+      if (selectedExerciseId) {
+        const found = exercises.find((ex) => ex._id === selectedExerciseId);
+        if (!found) {
+          alert("Selected exercise not found. Please choose again.");
+          return;
+        }
+        exerciseToUse = found;
+      } else {
+        // Case 2: user is adding a new exercise
+        if (!customExerciseName.trim()) {
+          alert("Please select an exercise or type a new one.");
+          return;
+        }
+
+        // ✅ Create exercise in DB
+        const newExercise = await createExercise(customExerciseName.trim());
+        exerciseToUse = newExercise;
+
+        // Optionally add it to local list and select it
+        setExercises((prev) => [...prev, newExercise]);
+        setSelectedExerciseId(newExercise._id);
+      }
+
+      if (!exerciseToUse) {
+        alert("Something went wrong with the exercise selection.");
         return;
       }
 
-      // 1) Create an Exercise for this name
-      const exerciseRes = await fetch(`${API_BASE_URL}/exercises`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: exerciseName.trim(),
-        }),
-      });
+      // 🧾 This is the payload we’ll later send to /api/workouts
+      const workoutPayload = {
+        exerciseId: exerciseToUse._id,
+        exerciseName: exerciseToUse.name,
+        sets,
+        date: new Date().toISOString(),
+      };
 
-      if (!exerciseRes.ok) {
-        const msg = await exerciseRes.text();
-        throw new Error(
-          `Failed to create exercise: ${exerciseRes.status} ${msg}`
-        );
-      }
+      console.log("Workout payload:", workoutPayload);
+      alert(
+        `Workout ready to send!\n\nExercise: ${exerciseToUse.name}\nSets: ${sets.length}`
+      );
 
-      const exercise = await exerciseRes.json() as { _id: string };
+      // TODO (next step): call createWorkout(workoutPayload) once backend route is ready
 
-      // 2) Create Workout that references that exercise
-      const workoutRes = await fetch(`${API_BASE_URL}/workouts`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          items: [
-            {
-              exerciseId: exercise._id,
-              sets,
-            },
-          ],
-          notes: notes.trim() || undefined,
-        }),
-      });
-
-      if (!workoutRes.ok) {
-        const msg = await workoutRes.text();
-        throw new Error(
-          `Failed to save workout: ${workoutRes.status} ${msg}`
-        );
-      }
-
-      await workoutRes.json();
-
-      alert("Workout saved to Coach-Fit ✅");
-
-      // Reset form
-      setExerciseName("");
+      // reset form after "saving"
+      setCustomExerciseName("");
       setSets([{ reps: 8, weight: 0, rpe: 7 }]);
-      setNotes("");
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Something went wrong while saving your workout.");
-    } finally {
-      setSubmitting(false);
+    } catch (err) {
+      console.error("Failed to submit workout", err);
+      alert("Failed to save workout. Please try again.");
     }
   };
+
+  const isUsingCustom = !selectedExerciseId;
 
   return (
     <div style={{ padding: "1.5rem" }}>
       <h1>Log Workout</h1>
-      <p>
-        This logs a workout to your Coach-Fit backend using MongoDB (exercise +
-        sets).
-      </p>
-
-      {error && (
-        <p style={{ color: "red", marginBottom: "1rem" }}>
-          {error}
-        </p>
-      )}
-
       <form onSubmit={handleSubmit} style={{ maxWidth: 500 }}>
+        {/* Exercise selection */}
         <div style={{ marginBottom: "1rem" }}>
           <label>
-            Exercise name <br />
-            <input
-              type="text"
-              value={exerciseName}
-              onChange={(e) => setExerciseName(e.target.value)}
+            Exercise <br />
+            <select
+              value={selectedExerciseId || "custom"}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === "custom") {
+                  setSelectedExerciseId("");
+                } else {
+                  setSelectedExerciseId(value);
+                }
+              }}
               style={{ width: "100%", padding: "0.5rem" }}
-              placeholder="e.g. Barbell Bench Press"
-              required
-            />
+            >
+              <option value="custom">➕ Add or type a new exercise</option>
+              {exercises.map((ex) => (
+                <option key={ex._id} value={ex._id}>
+                  {ex.name}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
 
-        <div style={{ marginBottom: "1rem" }}>
-          <label>
-            Notes (optional) <br />
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              style={{ width: "100%", padding: "0.5rem", minHeight: "60px" }}
-              placeholder="How did this session feel?"
-            />
-          </label>
-        </div>
+        {/* Custom exercise name input */}
+        {isUsingCustom && (
+          <div style={{ marginBottom: "1rem" }}>
+            <label>
+              Exercise name <br />
+              <input
+                type="text"
+                value={customExerciseName}
+                onChange={(e) => setCustomExerciseName(e.target.value)}
+                style={{ width: "100%", padding: "0.5rem" }}
+                placeholder="e.g. Barbell Bench Press"
+              />
+            </label>
+          </div>
+        )}
 
         <h2>Sets</h2>
         {sets.map((set, index) => (
@@ -203,20 +207,13 @@ const LogWorkoutPage: React.FC = () => {
           </div>
         ))}
 
-        <button
-          type="button"
-          onClick={addSet}
-          style={{ marginBottom: "1rem" }}
-          disabled={submitting}
-        >
+        <button type="button" onClick={addSet} style={{ marginBottom: "1rem" }}>
           + Add another set
         </button>
 
         <br />
 
-        <button type="submit" disabled={submitting || !exerciseName.trim()}>
-          {submitting ? "Saving..." : "Save Workout"}
-        </button>
+        <button type="submit">Save Workout</button>
       </form>
     </div>
   );

@@ -5,12 +5,11 @@ export interface User {
   _id: string;
   name: string;
   email: string;
-  // add other fields if your backend returns them
 }
 
 export interface AuthResponse {
-  token: string; // required, not optional
   user: User;
+  token: string;
 }
 
 export const login = (
@@ -28,9 +27,6 @@ export const register = (
   return api.post<AuthResponse>("/auth/register", { name, email, password });
 };
 
-export const fetchMe = (): Promise<User> => {
+export const getMe = (): Promise<User> => {
   return api.get<User>("/auth/me");
 };
-
-// alias if you want to use getMe elsewhere
-export const getMe = fetchMe;

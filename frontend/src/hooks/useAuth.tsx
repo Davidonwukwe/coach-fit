@@ -4,9 +4,10 @@ import React, {
   useContext,
   useEffect,
   useState,
+  ReactNode,
 } from "react";
 import type { User, AuthResponse } from "../api/auth";
-import { fetchMe } from "../api/auth";
+import { getMe } from "../api/auth";
 
 const TOKEN_KEY = "coachfit_token";
 
@@ -20,11 +21,13 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(
+    localStorage.getItem(TOKEN_KEY)
+  );
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -35,11 +38,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     setToken(stored);
-    fetchMe()
-      .then((u: User) => setUser(u))
+
+    getMe()
+      .then((u) => setUser(u))
       .catch(() => {
         localStorage.removeItem(TOKEN_KEY);
-        setUser(null);
         setToken(null);
       })
       .finally(() => setLoading(false));
@@ -71,7 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 export const useAuth = (): AuthContextValue => {
   const ctx = useContext(AuthContext);
   if (!ctx) {
-    throw new Error("useAuth must be used within AuthProvider");
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return ctx;
 };

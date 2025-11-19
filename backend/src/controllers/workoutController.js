@@ -21,7 +21,9 @@ exports.createWorkout = async (req, res) => {
     const { date, items, notes } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ message: "At least one exercise item is required." });
+      return res
+        .status(400)
+        .json({ message: "At least one exercise item is required." });
     }
 
     const workout = await Workout.create({
@@ -31,7 +33,10 @@ exports.createWorkout = async (req, res) => {
       notes,
     });
 
-    const populated = await workout.populate("items.exerciseId", "name muscleGroup");
+    const populated = await workout.populate(
+      "items.exerciseId",
+      "name muscleGroup"
+    );
 
     res.status(201).json(populated);
   } catch (err) {
@@ -60,5 +65,29 @@ exports.getWorkouts = async (req, res) => {
   } catch (err) {
     console.error("Get workouts error:", err);
     res.status(500).json({ message: "Failed to fetch workouts." });
+  }
+};
+
+// DELETE /api/workouts/:id
+exports.deleteWorkout = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Make sure we only delete workouts belonging to the logged-in user
+    const deleted = await Workout.findOneAndDelete({
+      _id: id,
+      userId: req.userId,
+    });
+
+    if (!deleted) {
+      return res
+        .status(404)
+        .json({ message: "Workout not found for this user." });
+    }
+
+    return res.json({ message: "Workout deleted successfully." });
+  } catch (err) {
+    console.error("Delete workout error:", err);
+    return res.status(500).json({ message: "Failed to delete workout." });
   }
 };

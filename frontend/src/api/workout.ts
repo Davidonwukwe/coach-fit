@@ -42,3 +42,8 @@ export async function fetchWorkoutById(id: string): Promise<Workout> {
   if (!res.ok) throw new Error("Failed to fetch workout");
   return res.json();
 }
+export const deleteWorkout = async (
+  id: string
+): Promise<{ message: string }> => {
+  return api.delete<{ message: string }>(`/workouts/${id}`);
+};

@@ -1,10 +1,20 @@
 // backend/src/routes/workoutRoutes.js
 const express = require("express");
 const router = express.Router();
-const { createWorkout, getWorkouts } = require("../controllers/workoutController");
-const auth = require("../middleware/auth");
+const {
+  createWorkout,
+  getWorkouts,
+  deleteWorkout,
+} = require("../controllers/workoutController");
+const authMiddleware = require("../middleware/auth");
 
-router.post("/", auth, createWorkout);
-router.get("/", auth, getWorkouts);
+// Create workout
+router.post("/", authMiddleware, createWorkout);
 
-module.exports = router;
+// List workouts (with optional date filters)
+router.get("/", authMiddleware, getWorkouts);
+
+// Delete a single workout
+router.delete("/:id", authMiddleware, deleteWorkout);
+
+module.exports = router; 

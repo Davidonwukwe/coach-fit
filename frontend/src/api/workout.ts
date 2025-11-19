@@ -34,3 +34,11 @@ export const createWorkout = async (
 ): Promise<Workout> => {
   return api.post<Workout>("/workouts", payload);
 };
+
+export async function fetchWorkoutById(id: string): Promise<Workout> {
+  const res = await fetch(`/api/workouts/${id}`, {
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to fetch workout");
+  return res.json();
+}

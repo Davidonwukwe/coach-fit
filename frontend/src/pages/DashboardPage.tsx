@@ -26,7 +26,6 @@ const DashboardPage: React.FC = () => {
 
   const hasWorkouts = !loading && !error && workouts.length > 0;
 
-  // Simple stats (we know backend returns workouts sorted by date desc)
   const totalWorkouts = workouts.length;
   const lastWorkoutDate =
     hasWorkouts && workouts[0].date
@@ -83,7 +82,7 @@ const DashboardPage: React.FC = () => {
         </Link>
       </div>
 
-      {/* Small stats summary */}
+      {/* Stats */}
       <section
         style={{
           marginTop: "2rem",
@@ -92,6 +91,7 @@ const DashboardPage: React.FC = () => {
           flexWrap: "wrap",
         }}
       >
+        {/* Total workouts */}
         <div
           style={{
             minWidth: "180px",
@@ -102,11 +102,12 @@ const DashboardPage: React.FC = () => {
           }}
         >
           <div style={{ fontSize: "0.9rem", color: "#666" }}>Total Workouts</div>
-          <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#666"}}>
+          <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#666" }}>
             {totalWorkouts}
           </div>
         </div>
 
+        {/* Last workout */}
         <div
           style={{
             minWidth: "180px",
@@ -130,16 +131,9 @@ const DashboardPage: React.FC = () => {
         <h2>Recent Workouts</h2>
 
         {loading && <p>Loading your workouts...</p>}
-
-        {error && (
-          <p style={{ color: "red", marginTop: "0.5rem" }}>{error}</p>
-        )}
-
+        {error && <p style={{ color: "red" }}>{error}</p>}
         {!loading && !error && workouts.length === 0 && (
-          <p style={{ marginTop: "0.5rem" }}>
-            You haven’t logged any workouts yet. Start by logging your first
-            session!
-          </p>
+          <p>No workouts logged yet.</p>
         )}
 
         {hasWorkouts && (
@@ -155,18 +149,14 @@ const DashboardPage: React.FC = () => {
               const dateLabel = new Date(w.date).toLocaleDateString();
               const firstItem = w.items[0];
 
-              // Safely derive the main exercise name
               let mainExerciseName = "Workout";
               if (firstItem) {
                 if (firstItem.exerciseName) {
                   mainExerciseName = firstItem.exerciseName;
                 } else {
-                  const exId: any = firstItem.exerciseId;
-                  if (exId && typeof exId === "object" && "name" in exId) {
-                    // Populated doc: { _id, name, muscleGroup }
-                    mainExerciseName = exId.name;
-                  } else if (typeof exId === "string") {
-                    mainExerciseName = exId;
+                  const exObj: any = firstItem.exerciseId;
+                  if (exObj && typeof exObj === "object" && "name" in exObj) {
+                    mainExerciseName = exObj.name;
                   }
                 }
               }
@@ -177,14 +167,18 @@ const DashboardPage: React.FC = () => {
               );
 
               return (
-                <>
+                <Link
+                  key={w._id}
+                  to={`/workout/${w._id}`}
+                  style={{ textDecoration: "none", color: "inherit" }}
+                >
                   <div
-                    key={w._id}
                     style={{
                       border: "1px solid #ddd",
                       borderRadius: "8px",
                       padding: "0.75rem 1rem",
                       background: "#fafafa",
+                      cursor: "pointer",
                     }}
                   >
                     <div
@@ -201,9 +195,11 @@ const DashboardPage: React.FC = () => {
                         {totalSets > 1 ? "s" : ""}
                       </span>
                     </div>
+
                     <div style={{ fontSize: "0.95rem", color: "#333" }}>
                       Main exercise: <strong>{mainExerciseName}</strong>
                     </div>
+
                     {w.notes && (
                       <div
                         style={{
@@ -216,7 +212,7 @@ const DashboardPage: React.FC = () => {
                       </div>
                     )}
                   </div>
-                </>
+                </Link>
               );
             })}
           </div>

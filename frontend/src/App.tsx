@@ -11,6 +11,7 @@ import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./hooks/useAuth";
 import "./App.css";
+import WorkoutDetailsPage from "./pages/WorkoutDetailsPage";
 
 const App: React.FC = () => {
   return (
@@ -58,6 +59,14 @@ const App: React.FC = () => {
                 </ProtectedRoute>
               }
             />
+            <Route 
+              path="/workout/:id" 
+              element={
+                <ProtectedRoute>
+                  <WorkoutDetailsPage />
+                </ProtectedRoute>
+                } />
+
           </Routes>
         </main>
       </BrowserRouter>

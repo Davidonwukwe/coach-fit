@@ -8,8 +8,8 @@ export interface WorkoutSet {
 }
 
 export interface WorkoutItem {
-  exerciseId: string;
-  exerciseName?: string; // optional, if you populate it on the backend
+  exerciseId: string | { _id: string; name: string; muscleGroup: string }; // runtime can be populated object
+  exerciseName?: string; // optional, if you populate it on the backend or set on frontend
   sets: WorkoutSet[];
 }
 
@@ -28,6 +28,11 @@ export const fetchWorkouts = async (): Promise<Workout[]> => {
   return api.get<Workout[]>("/workouts");
 };
 
+// Fetch a single workout by id (if you ever want to use it)
+export const fetchWorkoutById = async (id: string): Promise<Workout> => {
+  return api.get<Workout>(`/workouts/${id}`);
+};
+
 // Create a new workout
 export const createWorkout = async (
   payload: Omit<Workout, "_id" | "userId" | "createdAt" | "updatedAt">
@@ -35,15 +40,15 @@ export const createWorkout = async (
   return api.post<Workout>("/workouts", payload);
 };
 
-export async function fetchWorkoutById(id: string): Promise<Workout> {
-  const res = await fetch(`/api/workouts/${id}`, {
-    credentials: "include",
-  });
-  if (!res.ok) throw new Error("Failed to fetch workout");
-  return res.json();
-}
-export const deleteWorkout = async (
-  id: string
-): Promise<{ message: string }> => {
+// Update workout (we’ll use this mainly for notes right now)
+export const updateWorkout = async (
+  id: string,
+  payload: Partial<Omit<Workout, "_id" | "userId" | "createdAt" | "updatedAt">>
+): Promise<Workout> => {
+  return api.put<Workout>(`/workouts/${id}`, payload);
+};
+
+// Delete workout (if you’re using it)
+export const deleteWorkout = async (id: string): Promise<{ message: string }> => {
   return api.delete<{ message: string }>(`/workouts/${id}`);
 };

@@ -5,7 +5,7 @@ const { Schema } = mongoose;
 const setSchema = new Schema(
   {
     reps: { type: Number, required: true },
-    weight: { type: Number, required: true },
+    weight: { type: Number},
     rpe: { type: Number, min: 1, max: 10 },
   },
   { _id: false }

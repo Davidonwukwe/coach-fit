@@ -68,77 +68,11 @@ exports.getWorkouts = async (req, res) => {
   }
 };
 
-// GET /api/workouts/:id
-exports.getWorkoutById = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const workout = await Workout.findOne({
-      _id: id,
-      userId: req.userId,
-    }).populate("items.exerciseId", "name muscleGroup");
-
-    if (!workout) {
-      return res
-        .status(404)
-        .json({ message: "Workout not found for this user." });
-    }
-
-    res.json(workout);
-  } catch (err) {
-    console.error("Get workout by id error:", err);
-    res.status(500).json({ message: "Failed to fetch workout." });
-  }
-};
-
-// PUT /api/workouts/:id
-// For now we mainly support updating notes (and optionally date/items if sent)
-exports.updateWorkout = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { date, items, notes } = req.body;
-
-    const update = {};
-
-    if (date) {
-      update.date = new Date(date);
-    }
-
-    // Only update items if provided & non-empty (to avoid wiping accidentally)
-    if (items && Array.isArray(items) && items.length > 0) {
-      update.items = items;
-    }
-
-    // Allow setting notes to empty string (clear notes)
-    if (typeof notes !== "undefined") {
-      update.notes = notes;
-    }
-
-    const workout = await Workout.findOneAndUpdate(
-      { _id: id, userId: req.userId },
-      update,
-      { new: true, runValidators: true }
-    ).populate("items.exerciseId", "name muscleGroup");
-
-    if (!workout) {
-      return res
-        .status(404)
-        .json({ message: "Workout not found for this user." });
-    }
-
-    return res.json(workout);
-  } catch (err) {
-    console.error("Update workout error:", err);
-    return res.status(500).json({ message: "Failed to update workout." });
-  }
-};
-
 // DELETE /api/workouts/:id
 exports.deleteWorkout = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Make sure we only delete workouts belonging to the logged-in user
     const deleted = await Workout.findOneAndDelete({
       _id: id,
       userId: req.userId,
@@ -154,5 +88,44 @@ exports.deleteWorkout = async (req, res) => {
   } catch (err) {
     console.error("Delete workout error:", err);
     return res.status(500).json({ message: "Failed to delete workout." });
+  }
+};
+
+// PUT /api/workouts/:id
+// Full edit of a workout (date, items, notes)
+exports.updateWorkout = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { date, items, notes } = req.body;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "At least one exercise item is required." });
+    }
+
+    const updated = await Workout.findOneAndUpdate(
+      { _id: id, userId: req.userId },
+      {
+        date: date ? new Date(date) : new Date(),
+        items,
+        notes,
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).populate("items.exerciseId", "name muscleGroup");
+
+    if (!updated) {
+      return res
+        .status(404)
+        .json({ message: "Workout not found for this user." });
+    }
+
+    return res.json(updated);
+  } catch (err) {
+    console.error("Update workout error:", err);
+    return res.status(500).json({ message: "Failed to update workout." });
   }
 };

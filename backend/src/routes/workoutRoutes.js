@@ -4,9 +4,8 @@ const router = express.Router();
 const {
   createWorkout,
   getWorkouts,
-  getWorkoutById,
-  updateWorkout,
   deleteWorkout,
+  updateWorkout,
 } = require("../controllers/workoutController");
 const authMiddleware = require("../middleware/auth");
 
@@ -16,10 +15,7 @@ router.post("/", authMiddleware, createWorkout);
 // List workouts (with optional date filters)
 router.get("/", authMiddleware, getWorkouts);
 
-// Get single workout
-router.get("/:id", authMiddleware, getWorkoutById);
-
-// Update workout (used for editing notes, etc.)
+// Update a workout (full edit)
 router.put("/:id", authMiddleware, updateWorkout);
 
 // Delete a single workout

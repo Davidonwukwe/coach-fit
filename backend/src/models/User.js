@@ -1,10 +1,10 @@
-// backend/src/models/User.js
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
+
     email: {
       type: String,
       required: true,
@@ -12,11 +12,16 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+
     passwordHash: { type: String, required: true },
+
     role: { type: String, enum: ["user", "admin"], default: "user" },
   },
   { timestamps: true }
 );
+
+// Remove any stale username index
+userSchema.index({ username: 1 }, { unique: false, sparse: false });
 
 userSchema.methods.comparePassword = function (password) {
   return bcrypt.compare(password, this.passwordHash);

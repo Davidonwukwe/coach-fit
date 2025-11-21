@@ -10,7 +10,6 @@ async function request<T>(
 ): Promise<T> {
   const token = localStorage.getItem("coachfit_token");
 
-  // Use a plain object so we can index it safely
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string> | undefined),
@@ -34,11 +33,11 @@ async function request<T>(
 }
 
 export const api = {
-  get:   <T>(path: string) => request<T>(path),
-  post:  <T>(path: string, body: unknown) =>
+  get:      <T>(path: string) => request<T>(path),
+  post:     <T>(path: string, body: unknown) =>
     request<T>(path, { method: "POST", body: JSON.stringify(body) }),
-  put:   <T>(path: string, body: unknown) =>
+  put:      <T>(path: string, body: unknown) =>
     request<T>(path, { method: "PUT", body: JSON.stringify(body) }),
-  delete:<T>(path: string) =>
+  delete:   <T>(path: string) =>
     request<T>(path, { method: "DELETE" }),
 };

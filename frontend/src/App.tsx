@@ -59,13 +59,11 @@ const App: React.FC = () => {
                 </ProtectedRoute>
               }
             />
-            <Route 
-              path="/workout/:id" 
-              element={
+              <Route path="/workout/:id" element={
                 <ProtectedRoute>
                   <WorkoutDetailsPage />
                 </ProtectedRoute>
-                } />
+              } />
 
           </Routes>
         </main>

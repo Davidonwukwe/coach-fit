@@ -109,7 +109,7 @@ const WorkoutDetailsPage: React.FC = () => {
       setDraftNotes(workout.notes || "");
       setEditing(true);
     } else {
-      // If you ever want a "Cancel" behaviour, you could add it here.
+      // Leaving edit mode without saving
       setEditing(false);
     }
   };
@@ -151,11 +151,14 @@ const WorkoutDetailsPage: React.FC = () => {
       setSaving(true);
       setError(null);
 
-      // Build payload – we only send items + notes for this update
-      const payload = {
+      // ✅ Build payload including required date
+      const payload: Omit<
+        Workout,
+        "_id" | "userId" | "createdAt" | "updatedAt"
+      > = {
+        date: workout.date, // keep existing date
         items: draftItems.map((item) => ({
           ...item,
-          // Ensure sets always have numeric values
           sets: item.sets.map((s) => ({
             reps: s.reps ?? 0,
             weight: s.weight ?? 0,
@@ -305,7 +308,7 @@ const WorkoutDetailsPage: React.FC = () => {
         </div>
       </header>
 
-      {/* High-level summary cards (unchanged) */}
+      {/* High-level summary cards */}
       <section
         style={{
           display: "flex",
@@ -612,7 +615,9 @@ const WorkoutDetailsPage: React.FC = () => {
                                   fontSize: "0.85rem",
                                 }}
                               />
-                            ) : weight || "—"}
+                            ) : (
+                              weight || "—"
+                            )}
                           </td>
 
                           {/* RPE */}
@@ -667,7 +672,7 @@ const WorkoutDetailsPage: React.FC = () => {
         })}
       </section>
 
-      {/* NOTES – moved below exercise breakdown */}
+      {/* NOTES – below exercise breakdown, edited with same button */}
       <section
         style={{
           marginTop: "2rem",

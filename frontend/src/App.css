@@ -1,87 +1,50 @@
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: #050816;
-  color: #f5f5f5;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif;
+  background: #f9fafb;
+  color: #111827;
 }
 
+/* Main container */
 .app-main {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 2rem 1rem 4rem;
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 1rem;
 }
 
-.navbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1.5rem;
-  background: #0b1020;
-  border-bottom: 1px solid #222;
+/* Dashboard Grid */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
 }
 
-.navbar a {
-  color: #f5f5f5;
-  text-decoration: none;
-  margin-left: 1rem;
+/* Card container */
+.card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 
-.navbar .logo {
-  font-weight: 700;
-  letter-spacing: 0.08em;
+/* Placeholder chart styling */
+.chart-placeholder {
+  background: #e5efff;
+  height: 190px;
+  border-radius: 10px;
+  margin-top: 1rem;
 }
 
-.nav-right button {
-  margin-left: 1rem;
-  background: transparent;
-  border: 1px solid #f87171;
-  color: #f87171;
-  padding: 0.35rem 0.9rem;
-  border-radius: 999px;
-  cursor: pointer;
-}
-
-.page {
-  margin-top: 2rem;
-}
-
-.auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  max-width: 400px;
-}
-
-.auth-form input {
-  padding: 0.5rem;
-  border-radius: 6px;
-  border: 1px solid #333;
-  background: #0f172a;
-  color: #f5f5f5;
-}
-
-.auth-form button,
-.primary-btn,
-.secondary-btn {
+/* Insight card */
+.insight-btn {
+  display: inline-block;
+  margin-top: 1rem;
   padding: 0.6rem 1.2rem;
-  border-radius: 999px;
-  border: none;
-  cursor: pointer;
+  background: #3b82f6;
+  color: white;
+  border-radius: 8px;
   font-weight: 600;
-}
-
-.primary-btn {
-  background: #22c55e;
-  color: #020617;
-}
-
-.secondary-btn {
-  background: transparent;
-  border: 1px solid #64748b;
-  color: #e2e8f0;
-}
-
-.error {
-  color: #f97373;
-  font-size: 0.9rem;
+  text-decoration: none;
 }

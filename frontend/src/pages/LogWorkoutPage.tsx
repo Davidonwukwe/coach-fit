@@ -15,8 +15,8 @@ interface SetInput {
 }
 
 interface ExerciseEntry {
-  selectedExerciseId: string;   // existing exercise from dropdown
-  customExerciseName: string;   // new exercise name typed by user
+  selectedExerciseId: string;
+  customExerciseName: string;
   sets: SetInput[];
 }
 
@@ -34,11 +34,10 @@ const LogWorkoutPage: React.FC = () => {
       sets: [{ reps: 8, weight: 0, rpe: 7 }],
     },
   ]);
-
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // Load exercises from backend when page mounts
+  // Load exercises on page mount
   useEffect(() => {
     const loadExercises = async () => {
       try {
@@ -51,8 +50,7 @@ const LogWorkoutPage: React.FC = () => {
     loadExercises();
   }, []);
 
-  // ---- helpers for manipulating entries/sets ----
-
+  // Helpers
   const addExerciseEntry = () => {
     setEntries((prev) => [
       ...prev,
@@ -83,11 +81,8 @@ const LogWorkoutPage: React.FC = () => {
   const addSetToEntry = (entryIndex: number) => {
     setEntries((prev) => {
       const copy = [...prev];
-      copy[entryIndex] = {
-        ...copy[entryIndex],
-        sets: [...copy[entryIndex].sets, { reps: 8, weight: 0, rpe: 7 }],
-      };
-      return copy;
+      copy[entryIndex].sets.push({ reps: 8, weight: 0, rpe: 7 });
+      return [...copy];
     });
   };
 
@@ -99,59 +94,45 @@ const LogWorkoutPage: React.FC = () => {
   ) => {
     setEntries((prev) => {
       const copy = [...prev];
-      const setsCopy = [...copy[entryIndex].sets];
-      setsCopy[setIndex] = { ...setsCopy[setIndex], [field]: value };
-      copy[entryIndex] = { ...copy[entryIndex], sets: setsCopy };
+      copy[entryIndex].sets[setIndex] = {
+        ...copy[entryIndex].sets[setIndex],
+        [field]: value,
+      };
       return copy;
     });
   };
 
-  // Resolve one ExerciseEntry → Exercise (either existing or newly created)
+  // Resolve chosen or new exercise
   const resolveExerciseForEntry = async (
     entry: ExerciseEntry
   ): Promise<Exercise> => {
     if (entry.selectedExerciseId) {
       const found = exercises.find((ex) => ex._id === entry.selectedExerciseId);
-      if (!found) {
-        throw new Error("Selected exercise not found. Please choose again.");
-      }
+      if (!found) throw new Error("Selected exercise not found.");
       return found;
     }
 
-    // custom exercise path
     if (!entry.customExerciseName.trim()) {
-      throw new Error("Please select an exercise or type a new one for each block.");
+      throw new Error("Please enter an exercise name.");
     }
 
     const newExercise = await createExercise(entry.customExerciseName.trim());
-
-    // update local state so it appears in dropdown next time
     setExercises((prev) => [...prev, newExercise]);
-
     return newExercise;
   };
 
-  // ---- submit handler ----
+  // Submit handler
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSaving(true);
 
     try {
-      if (entries.length === 0) {
-        alert("Please add at least one exercise.");
-        setSaving(false);
-        return;
-      }
-
-      // Resolve all exercises (existing or newly created)
       const resolvedExercises = await Promise.all(
         entries.map((entry) => resolveExerciseForEntry(entry))
       );
 
-      // Build WorkoutItem[] from entries + resolved exercises
       const items: WorkoutItem[] = entries.map((entry, idx) => {
-        const exercise = resolvedExercises[idx];
-
+        const ex = resolvedExercises[idx];
         const mappedSets: WorkoutSet[] = entry.sets.map((s) => ({
           reps: s.reps,
           weight: s.weight || 0,
@@ -159,29 +140,24 @@ const LogWorkoutPage: React.FC = () => {
         }));
 
         return {
-          exerciseId: exercise._id,
-          exerciseName: exercise.name,
+          exerciseId: ex._id,
+          exerciseName: ex.name,
           sets: mappedSets,
         };
       });
 
-      const workoutPayload: CreateWorkoutPayload = {
+      const payload: CreateWorkoutPayload = {
         date: new Date().toISOString(),
         notes: notes.trim() || undefined,
         items,
       };
 
-      const saved = await createWorkout(workoutPayload);
+      const saved = await createWorkout(payload);
       console.log("Saved workout:", saved);
 
-      alert(
-        `Workout saved!\n\nExercises: ${items.length}\nTotal sets: ${items.reduce(
-          (sum, it) => sum + it.sets.length,
-          0
-        )}`
-      );
+      alert("Workout saved successfully!");
 
-      // Reset form after saving
+      // Reset
       setEntries([
         {
           selectedExerciseId: "",
@@ -191,79 +167,93 @@ const LogWorkoutPage: React.FC = () => {
       ]);
       setNotes("");
     } catch (err: any) {
-      console.error("Failed to save workout", err);
-      alert(err.message || "Failed to save workout. Please try again.");
+      alert(err.message || "Failed to save workout.");
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div style={{ padding: "1.5rem" }}>
-      <h1>Log Workout</h1>
-      <p style={{ maxWidth: 520, marginTop: "0.5rem", color: "#555" }}>
-        Add one or more exercises to this workout. Each exercise can have its
-        own sets with reps, weight, and RPE.
+    <div className="app-main">
+      <h1 style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>
+        Log a Workout
+      </h1>
+
+      <p style={{ color: "#6b7280", maxWidth: 550 }}>
+        Add exercises, sets, weights, and RPE. Your logged workouts will appear
+        in **History** and be used to generate your **Analytics**.
       </p>
 
-      <form onSubmit={handleSubmit} style={{ maxWidth: 700, marginTop: "1rem" }}>
-        {entries.map((entry, idx) => {
-          const isUsingCustom = !entry.selectedExerciseId;
+      <div className="card" style={{ marginTop: "1.5rem", maxWidth: 900 }}>
+        <form onSubmit={handleSubmit}>
+          {entries.map((entry, idx) => {
+            const isUsingCustom = !entry.selectedExerciseId;
 
-          return (
-            <div
-              key={idx}
-              style={{
-                border: "1px solid #ddd",
-                borderRadius: "8px",
-                padding: "1rem",
-                marginBottom: "1rem",
-                background: "#fafafa",
-              }}
-            >
+            return (
               <div
+                key={idx}
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "0.75rem",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 10,
+                  padding: "1rem",
+                  marginBottom: "1rem",
+                  background: "#f9fafb",
                 }}
               >
-                <h2 style={{ margin: 0, fontSize: "1rem" }}>
-                  Exercise {idx + 1}
-                </h2>
-                {entries.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeExerciseEntry(idx)}
+                {/* Header */}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: "0.75rem",
+                  }}
+                >
+                  <h2
                     style={{
-                      border: "none",
-                      background: "transparent",
-                      color: "#c00",
-                      cursor: "pointer",
-                      fontSize: "0.85rem",
+                      margin: 0,
+                      fontSize: "1rem",
+                      fontWeight: 600,
                     }}
                   >
-                    Remove
-                  </button>
-                )}
-              </div>
+                    Exercise {idx + 1}
+                  </h2>
 
-              {/* Exercise select */}
-              <div style={{ marginBottom: "0.75rem" }}>
-                <label>
-                  Exercise <br />
+                  {entries.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeExerciseEntry(idx)}
+                      style={{
+                        border: "none",
+                        background: "transparent",
+                        color: "#dc2626",
+                        cursor: "pointer",
+                        fontWeight: 500,
+                      }}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+
+                {/* Exercise dropdown */}
+                <label style={{ fontSize: "0.9rem" }}>
+                  Exercise
                   <select
                     value={entry.selectedExerciseId || "custom"}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value === "custom") {
-                        updateEntryField(idx, "selectedExerciseId", "");
-                      } else {
-                        updateEntryField(idx, "selectedExerciseId", value);
-                      }
+                    onChange={(e) =>
+                      updateEntryField(
+                        idx,
+                        "selectedExerciseId",
+                        e.target.value === "custom" ? "" : e.target.value
+                      )
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "0.55rem",
+                      borderRadius: 8,
+                      border: "1px solid #d1d5db",
+                      marginTop: "0.3rem",
                     }}
-                    style={{ width: "100%", padding: "0.5rem" }}
                   >
                     <option value="custom">➕ Add or type a new exercise</option>
                     {exercises.map((ex) => (
@@ -273,15 +263,12 @@ const LogWorkoutPage: React.FC = () => {
                     ))}
                   </select>
                 </label>
-              </div>
 
-              {/* Custom exercise name input */}
-              {isUsingCustom && (
-                <div style={{ marginBottom: "0.75rem" }}>
-                  <label>
-                    Exercise name <br />
+                {/* Custom name */}
+                {isUsingCustom && (
+                  <label style={{ display: "block", marginTop: "0.75rem" }}>
+                    <span style={{ fontSize: "0.9rem" }}>Exercise Name</span>
                     <input
-                      type="text"
                       value={entry.customExerciseName}
                       onChange={(e) =>
                         updateEntryField(
@@ -290,128 +277,169 @@ const LogWorkoutPage: React.FC = () => {
                           e.target.value
                         )
                       }
-                      style={{ width: "100%", padding: "0.5rem" }}
                       placeholder="e.g. Barbell Bench Press"
+                      style={{
+                        width: "100%",
+                        padding: "0.55rem",
+                        borderRadius: 8,
+                        border: "1px solid #d1d5db",
+                        marginTop: "0.3rem",
+                      }}
                     />
                   </label>
-                </div>
-              )}
+                )}
 
-              {/* Sets for this exercise */}
-              <h3 style={{ marginTop: "0.5rem", fontSize: "0.95rem" }}>Sets</h3>
-              {entry.sets.map((set, setIndex) => (
-                <div
-                  key={setIndex}
+                {/* Sets */}
+                <h3
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr 1fr",
-                    gap: "0.5rem",
-                    marginBottom: "0.5rem",
+                    marginTop: "1rem",
+                    fontSize: "0.95rem",
+                    fontWeight: 600,
                   }}
                 >
-                  <div>
-                    <label>
-                      Reps
+                  Sets
+                </h3>
+
+                {entry.sets.map((set, sIdx) => (
+                  <div
+                    key={sIdx}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr 1fr",
+                      gap: "0.75rem",
+                      marginTop: "0.5rem",
+                    }}
+                  >
+                    {/* Reps */}
+                    <div>
+                      <label style={{ fontSize: "0.85rem" }}>Reps</label>
                       <input
                         type="number"
                         min={1}
                         value={set.reps}
                         onChange={(e) =>
-                          updateSetInEntry(
-                            idx,
-                            setIndex,
-                            "reps",
-                            Number(e.target.value)
-                          )
+                          updateSetInEntry(idx, sIdx, "reps", +e.target.value)
                         }
-                        style={{ width: "100%", padding: "0.25rem" }}
-                        required
+                        style={{
+                          width: "100%",
+                          padding: "0.4rem",
+                          borderRadius: 8,
+                          border: "1px solid #d1d5db",
+                        }}
                       />
-                    </label>
-                  </div>
-                  <div>
-                    <label>
-                      Weight (kg)
+                    </div>
+
+                    {/* Weight */}
+                    <div>
+                      <label style={{ fontSize: "0.85rem" }}>Weight (kg)</label>
                       <input
                         type="number"
                         min={0}
                         value={set.weight}
                         onChange={(e) =>
-                          updateSetInEntry(
-                            idx,
-                            setIndex,
-                            "weight",
-                            Number(e.target.value)
-                          )
+                          updateSetInEntry(idx, sIdx, "weight", +e.target.value)
                         }
-                        style={{ width: "100%", padding: "0.25rem" }}
+                        style={{
+                          width: "100%",
+                          padding: "0.4rem",
+                          borderRadius: 8,
+                          border: "1px solid #d1d5db",
+                        }}
                       />
-                    </label>
-                  </div>
-                  <div>
-                    <label>
-                      RPE
+                    </div>
+
+                    {/* RPE */}
+                    <div>
+                      <label style={{ fontSize: "0.85rem" }}>RPE</label>
                       <input
                         type="number"
                         min={1}
                         max={10}
                         value={set.rpe}
                         onChange={(e) =>
-                          updateSetInEntry(
-                            idx,
-                            setIndex,
-                            "rpe",
-                            Number(e.target.value)
-                          )
+                          updateSetInEntry(idx, sIdx, "rpe", +e.target.value)
                         }
-                        style={{ width: "100%", padding: "0.25rem" }}
+                        style={{
+                          width: "100%",
+                          padding: "0.4rem",
+                          borderRadius: 8,
+                          border: "1px solid #d1d5db",
+                        }}
                       />
-                    </label>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
 
-              <button
-                type="button"
-                onClick={() => addSetToEntry(idx)}
-                style={{ marginTop: "0.25rem", marginBottom: "0.25rem" }}
-              >
-                + Add another set
-              </button>
-            </div>
-          );
-        })}
+                {/* Add set */}
+                <button
+                  type="button"
+                  onClick={() => addSetToEntry(idx)}
+                  style={{
+                    marginTop: "0.75rem",
+                    padding: "0.35rem 0.9rem",
+                    borderRadius: 999,
+                    border: "1px solid #d1d5db",
+                    background: "white",
+                    cursor: "pointer",
+                    fontSize: "0.85rem",
+                  }}
+                >
+                  + Add Set
+                </button>
+              </div>
+            );
+          })}
 
-        {/* Add new exercise block */}
-        <button
-          type="button"
-          onClick={addExerciseEntry}
-          style={{
-            marginTop: "0.5rem",
-            marginBottom: "1rem",
-            display: "inline-block",
-          }}
-        >
-          ➕ Add another exercise
-        </button>
+          {/* Add exercise block */}
+          <button
+            type="button"
+            onClick={addExerciseEntry}
+            style={{
+              padding: "0.45rem 0.9rem",
+              borderRadius: 999,
+              border: "1px dashed #9ca3af",
+              background: "white",
+              cursor: "pointer",
+              marginTop: "0.5rem",
+              marginBottom: "1rem",
+            }}
+          >
+            ➕ Add Exercise
+          </button>
 
-        {/* Notes */}
-        <div style={{ marginBottom: "1rem", marginTop: "1rem" }}>
-          <label>
-            Notes (optional) <br />
+          {/* Notes */}
+          <label style={{ display: "block", marginBottom: "0.75rem" }}>
+            <span style={{ fontSize: "0.9rem" }}>Notes (optional)</span>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              style={{ width: "100%", padding: "0.5rem", minHeight: "80px" }}
+              style={{
+                width: "100%",
+                minHeight: 80,
+                padding: "0.6rem",
+                borderRadius: 8,
+                border: "1px solid #d1d5db",
+                marginTop: "0.3rem",
+              }}
               placeholder="How did this workout feel?"
             />
           </label>
-        </div>
 
-        <button type="submit" disabled={saving}>
-          {saving ? "Saving..." : "Save Workout"}
-        </button>
-      </form>
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={saving}
+            className="primary-btn"
+            style={{
+              borderRadius: 999,
+              padding: "0.6rem 1.4rem",
+              fontSize: "1rem",
+            }}
+          >
+            {saving ? "Saving..." : "Save Workout"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 };

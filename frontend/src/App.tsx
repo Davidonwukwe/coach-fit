@@ -10,6 +10,7 @@ import WorkoutAnalyticsPage from "./pages/AnalyticsPage";
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./hooks/useAuth";
+import ProfilePage from "./pages/ProfilePage";
 import "./App.css";
 import WorkoutDetailsPage from "./pages/WorkoutDetailsPage";
 
@@ -33,14 +34,8 @@ const App: React.FC = () => {
               }
             />
 
-            <Route
-              path="/log-workout"
-              element={
-                <ProtectedRoute>
-                  <LogWorkoutPage />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/log-workout" element={<LogWorkoutPage />} />
+
 
             <Route
               path="/history"
@@ -50,6 +45,16 @@ const App: React.FC = () => {
                 </ProtectedRoute>
               }
             />
+
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              }
+            />
+
 
             <Route
               path="/analytics"

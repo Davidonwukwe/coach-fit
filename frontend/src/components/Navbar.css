@@ -1,0 +1,139 @@
+/* NAVBAR BASE */
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  position: relative;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-logo-icon {
+  font-size: 1.5rem;
+  color: #3b82f6;
+}
+
+.nav-logo-text {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #111827;
+  text-decoration: none;
+}
+
+/* NAV LINKS */
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.nav-link {
+  color: #374151;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.nav-link.active {
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+/* PROFILE ICON */
+.profile-container {
+  position: relative;
+}
+
+.nav-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #d1d5db;
+}
+
+/* DROPDOWN */
+.dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: 46px;
+  background: white;
+  padding: 0.5rem 0;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  width: 160px;
+}
+
+.dropdown-item {
+  padding: 0.5rem 1rem;
+  display: block;
+  text-decoration: none;
+  color: #374151;
+}
+
+.dropdown-item:hover {
+  background: #f3f4f6;
+}
+
+.logout-item {
+  color: #dc2626;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* MOBILE */
+.mobile-only {
+  display: none;
+}
+
+.hamburger {
+  font-size: 1.8rem;
+  cursor: pointer;
+}
+
+.mobile-menu {
+  position: absolute;
+  top: 70px;
+  left: 0;
+  width: 100%;
+  background: white;
+  border-top: 1px solid #e5e7eb;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mobile-nav-link {
+  font-size: 1.2rem;
+  color: #111827;
+  text-decoration: none;
+}
+
+.mobile-profile button {
+  background: transparent;
+  border: none;
+  color: #dc2626;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+/* RESPONSIVE BREAKPOINT */
+@media (max-width: 800px) {
+  .desktop-only {
+    display: none;
+  }
+  .mobile-only {
+    display: block;
+  }
+}

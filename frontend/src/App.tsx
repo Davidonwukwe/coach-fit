@@ -34,7 +34,14 @@ const App: React.FC = () => {
               }
             />
 
-            <Route path="/log-workout" element={<LogWorkoutPage />} />
+            <Route
+              path="/log-workout"
+              element={
+                <ProtectedRoute>
+                  <LogWorkoutPage />
+                </ProtectedRoute>
+              }
+/>
 
 
             <Route

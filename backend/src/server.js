@@ -7,6 +7,7 @@ const connectDb = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const exerciseRoutes = require("./routes/exerciseRoutes");
 const workoutRoutes = require("./routes/workoutRoutes");
+const recommendationRoutes = require("./routes/recommendationRoutes"); // 🔹 NEW
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -23,6 +24,7 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/exercises", exerciseRoutes);
 app.use("/api/workouts", workoutRoutes);
+app.use("/api/recommendations", recommendationRoutes); // 🔹 NEW
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);

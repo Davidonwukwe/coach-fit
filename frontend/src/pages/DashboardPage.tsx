@@ -1,6 +1,8 @@
+// src/pages/DashboardPage.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchWorkouts, type Workout } from "../api/workout";
+import { fetchRecommendations } from "../api/recommendations";
 import {
   BarChart,
   Bar,
@@ -36,6 +38,12 @@ const DashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // AI recommendations state
+  const [insights, setInsights] = useState<string | null>(null);
+  const [insightsOpen, setInsightsOpen] = useState(false);
+  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [insightsError, setInsightsError] = useState<string | null>(null);
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -53,11 +61,7 @@ const DashboardPage: React.FC = () => {
   const totalSessions = workouts.length;
 
   // ====== DERIVED STATS FOR CHARTS ======
-  const {
-    sessionsByWeekday,
-    exerciseTypeData,
-    progressData,
-  } = useMemo(() => {
+  const { sessionsByWeekday, exerciseTypeData, progressData } = useMemo(() => {
     // --- 1. Total sessions per weekday (for bar chart) ---
     const weekdaysOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
     const weekdayCounts: Record<string, number> = {
@@ -83,7 +87,6 @@ const DashboardPage: React.FC = () => {
     }));
 
     // --- 2. Preferred exercise types (pie chart) ---
-    // Use muscleGroup if present, otherwise fall back to generic buckets.
     const typeCounts: Record<string, number> = {};
 
     for (const w of workouts) {
@@ -99,11 +102,9 @@ const DashboardPage: React.FC = () => {
       value,
     }));
 
-    // Show at most 3 main categories to keep the donut clean
     const exerciseTypeData = rawTypes.slice(0, 3);
 
     // --- 3. Progress over time (line chart) ---
-    // Count workouts per month
     const monthCounts: Record<string, number> = {};
 
     for (const w of workouts) {
@@ -111,21 +112,41 @@ const DashboardPage: React.FC = () => {
       monthCounts[m] = (monthCounts[m] || 0) + 1;
     }
 
-    const progressData = Object.entries(monthCounts).map(([month, sessions]) => ({
-      month,
-      sessions,
-    }));
+    const progressData = Object.entries(monthCounts).map(
+      ([month, sessions]) => ({
+        month,
+        sessions,
+      })
+    );
 
     return { sessionsByWeekday, exerciseTypeData, progressData };
   }, [workouts]);
+
+  // ====== GEMINI RECOMMENDATIONS HANDLER ======
+  const handleViewRecommendations = async () => {
+    setInsightsOpen(true);
+    setInsightsError(null);
+
+    // If we already have insights cached, just open the panel.
+    if (insights) return;
+
+    try {
+      setInsightsLoading(true);
+      const data = await fetchRecommendations(); // ✅ uses /api/recommendations + token
+      setInsights(data.recommendations || "No advice returned.");
+    } catch (err: any) {
+      console.error("Recommendations error", err);
+      setInsightsError(err.message || "Failed to fetch recommendations.");
+    } finally {
+      setInsightsLoading(false);
+    }
+  };
 
   return (
     <div className="app-main">
       <h1 style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>Dashboard</h1>
 
-      {error && (
-        <p style={{ color: "red", marginBottom: "1rem" }}>{error}</p>
-      )}
+      {error && <p style={{ color: "red", marginBottom: "1rem" }}>{error}</p>}
 
       {/* Grid Layout */}
       <div className="dashboard-grid">
@@ -173,11 +194,7 @@ const DashboardPage: React.FC = () => {
                     fontSize: 12,
                   }}
                 />
-                <Bar
-                  dataKey="sessions"
-                  radius={[6, 6, 0, 0]}
-                  fill={BLUE}
-                />
+                <Bar dataKey="sessions" radius={[6, 6, 0, 0]} fill={BLUE} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -201,7 +218,11 @@ const DashboardPage: React.FC = () => {
             <ResponsiveContainer>
               <PieChart>
                 <Pie
-                  data={exerciseTypeData.length ? exerciseTypeData : [{ name: "No data", value: 1 }]}
+                  data={
+                    exerciseTypeData.length
+                      ? exerciseTypeData
+                      : [{ name: "No data", value: 1 }]
+                  }
                   dataKey="value"
                   nameKey="name"
                   innerRadius={50}
@@ -209,20 +230,18 @@ const DashboardPage: React.FC = () => {
                   paddingAngle={3}
                   stroke="none"
                 >
-                  {(exerciseTypeData.length ? exerciseTypeData : [{ name: "No data", value: 1 }]).map(
-                    (_entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={
-                          index === 0
-                            ? BLUE_DARK
-                            : index === 1
-                            ? BLUE
-                            : GREEN
-                        }
-                      />
-                    )
-                  )}
+                  {(
+                    exerciseTypeData.length
+                      ? exerciseTypeData
+                      : [{ name: "No data", value: 1 }]
+                  ).map((_entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={
+                        index === 0 ? BLUE_DARK : index === 1 ? BLUE : GREEN
+                      }
+                    />
+                  ))}
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
@@ -232,7 +251,10 @@ const DashboardPage: React.FC = () => {
           <div style={{ marginTop: "0.75rem", fontSize: "0.85rem" }}>
             {exerciseTypeData.length ? (
               exerciseTypeData.map((t, index) => (
-                <div key={t.name} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <div
+                  key={t.name}
+                  style={{ display: "flex", alignItems: "center", gap: 6 }}
+                >
                   <span
                     style={{
                       display: "inline-block",
@@ -240,11 +262,7 @@ const DashboardPage: React.FC = () => {
                       height: 10,
                       borderRadius: "999px",
                       background:
-                        index === 0
-                          ? BLUE_DARK
-                          : index === 1
-                          ? BLUE
-                          : GREEN,
+                        index === 0 ? BLUE_DARK : index === 1 ? BLUE : GREEN,
                     }}
                   />
                   <span>{t.name}</span>
@@ -298,7 +316,12 @@ const DashboardPage: React.FC = () => {
                   dataKey="sessions"
                   stroke={BLUE_DARK}
                   strokeWidth={2.5}
-                  dot={{ r: 3, strokeWidth: 1, stroke: BLUE_DARK, fill: "#ffffff" }}
+                  dot={{
+                    r: 3,
+                    strokeWidth: 1,
+                    stroke: BLUE_DARK,
+                    fill: "#ffffff",
+                  }}
                   activeDot={{ r: 5 }}
                 />
               </LineChart>
@@ -306,12 +329,12 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* CARD 4 – Insights (AI later) */}
+        {/* CARD 4 – Insights (Gemini) */}
         <div className="card">
           <h2 style={{ marginTop: 0 }}>Insights</h2>
           <p style={{ color: "#6b7280", fontSize: "0.9rem" }}>
-            Soon this will show AI-powered recommendations based on your recent
-            training load and favorite exercises.
+            Get AI-powered training recommendations based on your recent
+            workouts and most common exercises.
           </p>
 
           <button
@@ -326,10 +349,33 @@ const DashboardPage: React.FC = () => {
               cursor: "pointer",
               fontWeight: 600,
             }}
-            onClick={() => alert("Gemini integration coming next 🙂")}
+            onClick={handleViewRecommendations}
+            disabled={insightsLoading}
           >
-            View Recommendations
+            {insightsLoading ? "Loading…" : "View Recommendations"}
           </button>
+
+          {/* Recommendation output */}
+          {insightsOpen && (
+            <div
+              style={{
+                marginTop: "1rem",
+                padding: "0.75rem 0.9rem",
+                borderRadius: 10,
+                background: "#f3f4f6",
+                fontSize: "0.9rem",
+                whiteSpace: "pre-line",
+              }}
+            >
+              {insightsLoading && <span>Generating tips…</span>}
+              {insightsError && (
+                <span style={{ color: "red" }}>{insightsError}</span>
+              )}
+              {!insightsLoading && !insightsError && insights && (
+                <span>{insights}</span>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

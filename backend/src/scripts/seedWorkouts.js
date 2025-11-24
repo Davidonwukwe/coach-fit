@@ -1,94 +1,120 @@
 // backend/src/scripts/seedWorkouts.js
 require("dotenv").config();
-const mongoose = require("mongoose");
-const User = require("../models/User");
-const Exercise = require("../models/Exercise");
+const connectDb = require("../config/db");
 const Workout = require("../models/Workout");
+const Exercise = require("../models/Exercise");
+const User = require("../models/User");
 
-async function main() {
+const WORKOUT_COUNT = 100;
+const MONTH_WINDOW = 6;
+
+// ---- helpers ----
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// random date between now and N months ago
+function randomDateWithinLastMonths(months) {
+  const now = new Date();
+  const past = new Date();
+  past.setMonth(past.getMonth() - months);
+
+  const diff = now.getTime() - past.getTime();
+  const randOffset = Math.random() * diff;
+
+  return new Date(past.getTime() + randOffset);
+}
+
+// Basic templates for exercises if DB is empty
+const DEFAULT_EXERCISES = [
+  { name: "Bench Press", muscleGroup: "Chest" },
+  { name: "Squat", muscleGroup: "Legs" },
+  { name: "Deadlift", muscleGroup: "Back" },
+  { name: "Overhead Press", muscleGroup: "Shoulders" },
+  { name: "Lat Pulldown", muscleGroup: "Back" },
+  { name: "Hammer Curl", muscleGroup: "Arms" },
+  { name: "Skull Crushers", muscleGroup: "Arms" },
+];
+
+async function ensureExercises() {
+  let exercises = await Exercise.find();
+  if (exercises.length === 0) {
+    console.log("No exercises found, creating defaults...");
+    exercises = await Exercise.insertMany(DEFAULT_EXERCISES);
+  }
+  return exercises;
+}
+
+async function getAnyUser() {
+  // ❗ Option 1: use first user in collection
+  const user = await User.findOne();
+  if (!user) {
+    throw new Error(
+      "No users found. Register at least one user via the app before running the seeder."
+    );
+  }
+  return user;
+}
+
+async function run() {
   try {
-    if (!process.env.MONGO_URI) {
-      console.error("MONGO_URI not set in .env");
-      process.exit(1);
-    }
+    await connectDb();
 
-    console.log("Connecting to MongoDB...");
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log("Connected.");
+    const user = await getAnyUser();
+    const exercises = await ensureExercises();
 
-    const user = await User.findOne();
-    if (!user) {
-      console.error("No users found in DB. Create an account first.");
-      process.exit(1);
-    }
+    console.log(
+      `Seeding ${WORKOUT_COUNT} workouts for user ${user.email} over last ${MONTH_WINDOW} months...`
+    );
 
-    const exercises = await Exercise.find();
-    if (exercises.length === 0) {
-      console.error("No exercises found. Add some exercises first.");
-      process.exit(1);
-    }
-
-    const today = new Date();
     const workoutsToInsert = [];
 
-    // Create workouts for the last 14 days
-    for (let dayOffset = 0; dayOffset < 14; dayOffset++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - dayOffset);
-
-      // 1–3 exercises per workout
-      const numExercises = 1 + Math.floor(Math.random() * 3);
-      const used = new Set();
+    for (let i = 0; i < WORKOUT_COUNT; i++) {
+      const numExercises = randomInt(1, 4); // 1–4 exercises per workout
       const items = [];
 
-      for (let i = 0; i < numExercises; i++) {
-        const ex =
-          exercises[Math.floor(Math.random() * exercises.length)];
-        if (used.has(ex._id.toString())) continue;
-        used.add(ex._id.toString());
+      for (let j = 0; j < numExercises; j++) {
+        const exercise =
+          exercises[randomInt(0, exercises.length - 1)];
 
-        // 2–4 sets per exercise
-        const numSets = 2 + Math.floor(Math.random() * 3);
+        const numSets = randomInt(1, 4); // 1–4 sets
         const sets = [];
 
         for (let s = 0; s < numSets; s++) {
-          sets.push({
-            reps: 6 + Math.floor(Math.random() * 7), // 6–12 reps
-            weight: 20 + 5 * Math.floor(Math.random() * 10), // 20–65 kg
-            rpe: 6 + Math.floor(Math.random() * 4), // 6–9
-          });
+          const reps = randomInt(5, 15);
+          const weight = randomInt(10, 120); // kg
+          const rpe = randomInt(6, 9);
+
+          sets.push({ reps, weight, rpe });
         }
 
         items.push({
-          exerciseId: ex._id,
-          exerciseName: ex.name,
+          exerciseId: exercise._id,
+          exerciseName: exercise.name,
           sets,
         });
       }
 
+      const randomDate = randomDateWithinLastMonths(MONTH_WINDOW);
+
       workoutsToInsert.push({
         userId: user._id,
-        date,
+        date: randomDate,
         items,
-        notes: "Seeded workout for testing analytics.",
+        notes:
+          Math.random() < 0.4
+            ? "Auto-generated workout for testing analytics."
+            : "",
       });
     }
 
-    if (workoutsToInsert.length === 0) {
-      console.log("Nothing to insert.");
-      process.exit(0);
-    }
-
-    console.log(`Inserting ${workoutsToInsert.length} workouts...`);
     await Workout.insertMany(workoutsToInsert);
-    console.log("Done seeding workouts.");
-
-    await mongoose.disconnect();
-    console.log("Disconnected. ✅");
+    console.log("✅ Seeding complete!");
+    process.exit(0);
   } catch (err) {
-    console.error("Seed error:", err);
+    console.error("❌ Seeding error:", err);
     process.exit(1);
   }
 }
 
-main();
+run();

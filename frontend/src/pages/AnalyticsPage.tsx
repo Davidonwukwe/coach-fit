@@ -107,6 +107,7 @@ const AnalyticsPage: React.FC = () => {
     muscleBalance,
     consistency,
     recoveryFlag,
+    coachSuggestion,
   } = useMemo(() => {
     const emptyConsistency: ConsistencyInfo = {
       score: null,
@@ -117,7 +118,11 @@ const AnalyticsPage: React.FC = () => {
       projectedNextWeek: null,
     };
 
+    let coachSuggestion = "";
+
     if (!workouts || workouts.length === 0) {
+      coachSuggestion =
+        "Coach-Fit Suggests: Log a few workouts so I can analyze your training load, balance, and consistency.";
       return {
         stats: {
           totalWorkouts: 0,
@@ -130,6 +135,7 @@ const AnalyticsPage: React.FC = () => {
         muscleBalance: [] as { group: string; sets: number }[],
         consistency: emptyConsistency,
         recoveryFlag: "Not enough data yet",
+        coachSuggestion,
       };
     }
 
@@ -327,6 +333,7 @@ const AnalyticsPage: React.FC = () => {
 
     // --- recovery flag based on 7-day vs previous 7-day training load ---
     let recoveryFlag = "Not enough data yet";
+    let loadChangePhrase = "";
 
     if (loadSeries.length >= 14) {
       const last7 = loadSeries.slice(-7);
@@ -340,6 +347,7 @@ const AnalyticsPage: React.FC = () => {
       } else if (sumPrev7 === 0 && sumLast7 > 0) {
         recoveryFlag =
           "You’ve recently started training — increase gradually and watch recovery.";
+        loadChangePhrase = "your first real training week — build up gradually";
       } else {
         const ratio = sumLast7 / sumPrev7;
 
@@ -353,6 +361,58 @@ const AnalyticsPage: React.FC = () => {
           recoveryFlag =
             "Training load is fairly stable compared to last week — recovery looks balanced.";
         }
+
+        const diffRatio = ratio - 1;
+        const pct = Math.round(Math.abs(diffRatio * 100));
+        if (pct < 5) {
+          loadChangePhrase = "about the same as the previous week";
+        } else if (diffRatio > 0) {
+          loadChangePhrase = `${pct}% higher than the previous week`;
+        } else {
+          loadChangePhrase = `${pct}% lower than the previous week`;
+        }
+      }
+    }
+
+    // --- muscle imbalance note ---
+    let muscleNote = "";
+    const upper =
+      muscleBalance.find((m) => m.group === "Upper Body")?.sets || 0;
+    const lower =
+      muscleBalance.find((m) => m.group === "Lower Body")?.sets || 0;
+
+    if (upper > 0 || lower > 0) {
+      if (upper >= lower * 1.4) {
+        muscleNote =
+          "Your lower body volume is noticeably lower than your upper body — consider adding more leg or glute work.";
+      } else if (lower >= upper * 1.4) {
+        muscleNote =
+          "Your upper body volume is noticeably lower than your lower body — consider adding some extra push/pull work.";
+      }
+    }
+
+    // --- Coach-Fit Suggests text (short version) ---
+    if (consistency.score === null) {
+      coachSuggestion =
+        "Log a few more weeks of workouts so I can show clearer trends in your training load and balance.";
+    } else {
+      const consistencyPhrase =
+        consistency.label === "Very consistent"
+          ? "You're very consistent"
+          : consistency.label === "Inconsistent"
+          ? "You're a bit inconsistent"
+          : "Your consistency is moderate";
+
+      coachSuggestion = `${consistencyPhrase} (~${consistency.avgPerWeek.toFixed(
+        1
+      )} workouts/week).`;
+
+      if (loadChangePhrase) {
+        coachSuggestion += ` Last week's training load was ${loadChangePhrase}.`;
+      }
+
+      if (muscleNote) {
+        coachSuggestion += ` ${muscleNote}`;
       }
     }
 
@@ -363,6 +423,7 @@ const AnalyticsPage: React.FC = () => {
       muscleBalance,
       consistency,
       recoveryFlag,
+      coachSuggestion,
     };
   }, [workouts]);
 
@@ -592,6 +653,32 @@ const AnalyticsPage: React.FC = () => {
             </>
           )}
         </p>
+
+        {/* Coach-Fit Suggests mini card */}
+        {coachSuggestion && (
+          <div
+            style={{
+              marginTop: "0.6rem",
+              marginBottom: "0.3rem",
+              padding: "0.75rem 0.9rem",
+              borderRadius: 10,
+              background: "#f3f4f6",
+              border: "1px solid #e5e7eb",
+              fontSize: "0.88rem",
+            }}
+          >
+            <div
+              style={{
+                fontWeight: 600,
+                marginBottom: 4,
+                color: "#111827",
+              }}
+            >
+              Coach-Fit Suggests
+            </div>
+            <p style={{ margin: 0, color: "#4b5563" }}>{coachSuggestion}</p>
+          </div>
+        )}
 
         <div style={{ height: 260, marginTop: "0.5rem" }}>
           <ResponsiveContainer width="100%" height="100%">
